@@ -1,14 +1,14 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Header from "@/components/Header"
 import TripCard from "@/components/TripCard"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { motion } from "framer-motion"
-import { 
-  Search, Filter, Calendar, MapPin, TrendingUp, 
+import {
+  Search, Filter, Calendar, MapPin, TrendingUp,
   Clock, Heart, Grid, List, ChevronDown
 } from "lucide-react"
 
@@ -68,10 +68,10 @@ const searchSuggestions = [
   "アクティビティ"
 ]
 
-export default function ExplorePage() {
+function ExploreContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  
+
   const [trips, setTrips] = useState<Array<{
     id: string
     title: string
@@ -580,5 +580,13 @@ export default function ExplorePage() {
         </motion.div>
       </div>
     </div>
+  )
+}
+
+export default function ExplorePage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ExploreContent />
+    </Suspense>
   )
 }

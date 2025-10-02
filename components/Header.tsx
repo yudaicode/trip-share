@@ -167,7 +167,7 @@ export default function Header() {
                   マイページ
                 </Link>
                 <Link
-                  href={`/users/${user.id}`}
+                  href={`/users/${session.user.id}`}
                   className="block py-2 text-gray-700 hover:text-blue-600 transition-colors font-medium"
                   onClick={() => setShowMobileMenu(false)}
                 >
