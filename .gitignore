@@ -45,3 +45,6 @@ next-env.d.ts
 
 # OS files
 Thumbs.db
+
+# MCP config (contains sensitive keys)
+claude_desktop_config.json

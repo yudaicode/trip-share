@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+// import { useSession } from "next-auth/react"
 import Link from "next/link"
 import Header from "@/components/Header"
 import TripCard from "@/components/TripCard"
@@ -16,6 +17,7 @@ const mockTrips = [
     category: "国内旅行",
     startDate: new Date("2024-03-15"),
     endDate: new Date("2024-03-17"),
+    travelerCount: 2,
     likes: 234,
     comments: 45,
     userName: "田中太郎",
@@ -28,6 +30,7 @@ const mockTrips = [
     category: "国内旅行",
     startDate: new Date("2024-11-20"),
     endDate: new Date("2024-11-22"),
+    travelerCount: 1,
     likes: 567,
     comments: 89,
     userName: "山田花子",
@@ -40,6 +43,7 @@ const mockTrips = [
     category: "アクティビティ",
     startDate: new Date("2024-07-10"),
     endDate: new Date("2024-07-14"),
+    travelerCount: 4,
     likes: 432,
     comments: 67,
     userName: "鈴木一郎",
@@ -52,6 +56,7 @@ const mockTrips = [
     category: "グルメ旅",
     startDate: new Date("2024-06-01"),
     endDate: new Date("2024-06-05"),
+    travelerCount: 3,
     likes: 789,
     comments: 123,
     userName: "佐藤美咲",
@@ -64,6 +69,7 @@ const mockTrips = [
     category: "日帰り旅行",
     startDate: new Date("2024-04-20"),
     endDate: new Date("2024-04-20"),
+    travelerCount: 2,
     likes: 345,
     comments: 56,
     userName: "高橋健太",
@@ -76,6 +82,7 @@ const mockTrips = [
     category: "グルメ旅",
     startDate: new Date("2024-05-15"),
     endDate: new Date("2024-05-16"),
+    travelerCount: 2,
     likes: 456,
     comments: 78,
     userName: "伊藤さくら",
@@ -111,6 +118,39 @@ const features = [
 ]
 
 export default function Home() {
+  // const { data: session } = useSession()
+  const session = { user: { name: "テストユーザー", email: "test@example.com", id: "1" } } // 一時的にログイン状態をシミュレート
+  const [trips, setTrips] = useState<Array<{
+    id: string
+    title: string
+    description: string
+    category: string
+    startDate: string
+    endDate: string
+    travelerCount: number
+    coverImage: string | null
+    user?: { name: string }
+    _count?: { likes: number; comments: number }
+  }>>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    fetchTrips()
+  }, [])
+
+  const fetchTrips = async () => {
+    try {
+      const response = await fetch('/api/trips')
+      if (response.ok) {
+        const data = await response.json()
+        setTrips(data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch trips:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
   return (
     <div className="min-h-screen">
       <Header />
@@ -123,27 +163,49 @@ export default function Home() {
           transition={{ duration: 0.8 }}
           className="container mx-auto text-center relative z-10"
         >
-          <h1 className="text-5xl md:text-6xl font-bold mb-6">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-6">
             <span className="bg-gradient-to-r from-blue-600 to-pink-600 bg-clip-text text-transparent">
-              旅の思い出を
+              旅のネタを
             </span>
             <br />
             <span className="bg-gradient-to-r from-pink-600 to-yellow-600 bg-clip-text text-transparent">
-              みんなとシェア
+              みんなでシェア
             </span>
           </h1>
-          <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-            TripShareで素敵な旅行プランを作成して、
-            世界中の旅行好きと共有しましょう
+          <p className="text-lg sm:text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
+            タビネタで素敵な旅行プランを作成して、
+            旅のネタをみんなと交換しましょう
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="text-lg px-8">
-              旅を作成する
-              <ArrowRight className="ml-2" />
-            </Button>
-            <Button size="lg" variant="outline" className="text-lg px-8">
-              プランを探す
-            </Button>
+            {session ? (
+              <>
+                <Link href="/create">
+                  <Button size="lg" className="text-lg px-8">
+                    旅を作成する
+                    <ArrowRight className="ml-2" />
+                  </Button>
+                </Link>
+                <Link href="/dashboard">
+                  <Button size="lg" variant="outline" className="text-lg px-8">
+                    マイページ
+                  </Button>
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link href="/auth/signup">
+                  <Button size="lg" className="text-lg px-8">
+                    無料で始める
+                    <ArrowRight className="ml-2" />
+                  </Button>
+                </Link>
+                <Link href="/explore">
+                  <Button size="lg" variant="outline" className="text-lg px-8">
+                    プランを探す
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
         </motion.div>
       </section>
@@ -189,16 +251,45 @@ export default function Home() {
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {mockTrips.map((trip, index) => (
+            {isLoading ? (
+              <div className="col-span-full flex justify-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+              </div>
+            ) : trips.length > 0 ? (
+              trips.map((trip, index) => (
               <motion.div
                 key={trip.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
               >
-                <TripCard {...trip} />
+                <TripCard
+                  id={trip.id}
+                  title={trip.title}
+                  description={trip.description}
+                  category={trip.category}
+                  startDate={new Date(trip.startDate)}
+                  endDate={new Date(trip.endDate)}
+                  travelerCount={trip.travelerCount}
+                  likes={trip._count?.likes || 0}
+                  comments={trip._count?.comments || 0}
+                  userName={trip.user?.name || 'ゲストユーザー'}
+                  coverImage={trip.coverImage}
+                />
               </motion.div>
-            ))}
+            ))
+            ) : (
+              mockTrips.map((trip, index) => (
+                <motion.div
+                  key={trip.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                >
+                  <TripCard {...trip} />
+                </motion.div>
+              ))
+            )}
           </div>
 
           <div className="text-center mt-10">
@@ -224,12 +315,23 @@ export default function Home() {
               今すぐ始めよう
             </h2>
             <p className="text-xl mb-8 opacity-90">
-              あなたの素敵な旅の思い出を世界中にシェアしましょう
+              あなたの素敵な旅のネタをみんなとシェアしましょう
             </p>
-            <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100">
-              無料で始める
-              <Sparkles className="ml-2" />
-            </Button>
+            {session ? (
+              <Link href="/create">
+                <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100">
+                  旅を作成する
+                  <Sparkles className="ml-2" />
+                </Button>
+              </Link>
+            ) : (
+              <Link href="/auth/signup">
+                <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100">
+                  無料で始める
+                  <Sparkles className="ml-2" />
+                </Button>
+              </Link>
+            )}
           </div>
         </motion.div>
       </section>

@@ -1,12 +1,10 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
-
-const inter = Inter({ subsets: ["latin"] });
+import { Providers } from "@/components/Providers";
 
 export const metadata: Metadata = {
-  title: "TripShare - 楽しい旅の思い出をシェアしよう",
-  description: "旅行のスケジュールを作成・共有できるプラットフォーム",
+  title: "タビネタ - 旅のネタをみんなでシェア",
+  description: "旅行プランを作成・共有して、旅のネタを交換できるプラットフォーム",
 };
 
 export default function RootLayout({
@@ -16,8 +14,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja">
-      <body className={`${inter.className} bg-gradient-to-br from-blue-50 via-white to-pink-50 min-h-screen`}>
-        {children}
+      <body className="bg-gradient-to-br from-blue-50 via-white to-pink-50 min-h-screen">
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );

@@ -1,19 +1,23 @@
 "use client"
 
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
-import { Calendar, Heart, MapPin, MessageCircle } from "lucide-react"
+import { Calendar, Heart, MapPin, MessageCircle, Users, Share2 } from "lucide-react"
 import { motion } from "framer-motion"
+import { useSession } from "next-auth/react"
 
 interface TripCardProps {
   id: string
   title: string
   description: string
-  coverImage?: string
+  coverImage?: string | null
   category: string
   startDate: Date
   endDate: Date
+  travelerCount: number
   likes: number
   comments: number
   userName: string
@@ -28,16 +32,98 @@ export default function TripCard({
   category,
   startDate,
   endDate,
-  likes,
+  travelerCount,
+  likes: initialLikes,
   comments,
   userName,
   userAvatar,
 }: TripCardProps) {
+  const router = useRouter()
+  const { data: session } = useSession()
+  const [isLiked, setIsLiked] = useState(false)
+  const [likesCount, setLikesCount] = useState(initialLikes)
+  const [isLikeLoading, setIsLikeLoading] = useState(false)
+
+  useEffect(() => {
+    const fetchLikeStatus = async () => {
+      if (session?.user) {
+        try {
+          // いいね状態を取得
+          const response = await fetch(`/api/trips/${id}/likes`)
+          if (response.ok) {
+            const data = await response.json()
+            setIsLiked(data.isLiked)
+            setLikesCount(data.count)
+          }
+        } catch (error) {
+          console.error('いいね状態の取得に失敗:', error)
+        }
+      }
+    }
+    fetchLikeStatus()
+  }, [id, session])
+
+  const handleLike = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    if (!session?.user) {
+      router.push('/auth/signin')
+      return
+    }
+
+    setIsLikeLoading(true)
+    try {
+      const response = await fetch(`/api/trips/${id}/likes`, {
+        method: isLiked ? 'DELETE' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (response.ok) {
+        setIsLiked(!isLiked)
+        setLikesCount(prev => isLiked ? Math.max(0, prev - 1) : prev + 1)
+      } else {
+        console.error('いいね操作に失敗しました')
+      }
+    } catch (error) {
+      console.error('いいねエラー:', error)
+    } finally {
+      setIsLikeLoading(false)
+    }
+  }
   const formatDate = (date: Date) => {
     return new Date(date).toLocaleDateString("ja-JP", {
       month: "short",
       day: "numeric",
     })
+  }
+
+  const handleShare = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    const url = `${window.location.origin}/trips/${id}`
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: title,
+          text: description,
+          url: url
+        })
+      } catch (err) {
+        console.error('共有に失敗しました:', err)
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(url)
+        alert('URLをクリップボードにコピーしました！')
+      } catch (err) {
+        console.error('コピーに失敗しました:', err)
+      }
+    }
   }
 
   return (
@@ -73,11 +159,17 @@ export default function TripCard({
               {description}
             </p>
             
-            <div className="flex items-center text-sm text-gray-500 mb-3">
-              <Calendar className="h-4 w-4 mr-1" />
-              <span>
-                {formatDate(startDate)} - {formatDate(endDate)}
-              </span>
+            <div className="flex items-center justify-between text-sm text-gray-500 mb-3">
+              <div className="flex items-center">
+                <Calendar className="h-4 w-4 mr-1" />
+                <span>
+                  {formatDate(startDate)} - {formatDate(endDate)}
+                </span>
+              </div>
+              <div className="flex items-center">
+                <Users className="h-4 w-4 mr-1" />
+                <span>{travelerCount}人</span>
+              </div>
             </div>
 
             <div className="flex items-center space-x-2">
@@ -91,15 +183,29 @@ export default function TripCard({
           <CardFooter className="px-4 py-3 border-t bg-gray-50/50">
             <div className="flex items-center justify-between w-full">
               <div className="flex items-center space-x-4">
-                <button className="flex items-center space-x-1 text-gray-600 hover:text-red-500 transition-colors">
-                  <Heart className="h-4 w-4" />
-                  <span className="text-sm">{likes}</span>
+                <button
+                  onClick={handleLike}
+                  disabled={isLikeLoading}
+                  className={`flex items-center space-x-1 transition-colors ${
+                    isLiked
+                      ? 'text-red-500 hover:text-red-600'
+                      : 'text-gray-600 hover:text-red-500'
+                  } ${isLikeLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  <Heart className={`h-4 w-4 ${isLiked ? 'fill-current' : ''}`} />
+                  <span className="text-sm">{likesCount}</span>
                 </button>
                 <div className="flex items-center space-x-1 text-gray-600">
                   <MessageCircle className="h-4 w-4" />
                   <span className="text-sm">{comments}</span>
                 </div>
               </div>
+              <button
+                onClick={handleShare}
+                className="flex items-center space-x-1 text-gray-600 hover:text-blue-500 transition-colors"
+              >
+                <Share2 className="h-4 w-4" />
+              </button>
             </div>
           </CardFooter>
         </Card>
