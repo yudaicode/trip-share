@@ -1,20 +1,21 @@
 import { createBrowserClient } from '@supabase/ssr'
 import mockSupabase from './mock-client'
 
-// Supabase URLとキーが設定されているか確認
-const isSupabaseConfigured =
-  process.env.NEXT_PUBLIC_SUPABASE_URL &&
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY &&
-  process.env.NEXT_PUBLIC_SUPABASE_URL.startsWith('https://')
-
 export function createClient() {
-  if (!isSupabaseConfigured) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  console.log('🔍 Supabase config check:', {
+    url: supabaseUrl || 'missing',
+    keyPresent: !!supabaseKey,
+    keyLength: supabaseKey?.length || 0
+  })
+
+  if (!supabaseUrl || !supabaseKey || !supabaseUrl.startsWith('https://')) {
     console.warn('⚠️ Supabase not configured. Using mock client.')
     return mockSupabase as any
   }
 
-  return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  console.log('✅ Using real Supabase client')
+  return createBrowserClient(supabaseUrl, supabaseKey)
 }
