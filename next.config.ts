@@ -9,16 +9,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  experimental: {
-    workerThreads: false,
-  },
-  webpack: (config) => {
-    config.optimization = {
-      ...config.optimization,
-      minimize: false,
-    }
-    return config
-  },
 };
 
 export default nextConfig;
