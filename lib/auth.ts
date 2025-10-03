@@ -18,9 +18,32 @@ export const authOptions: NextAuthOptions = {
       if (!user.email) return false
 
       try {
-        // MVPではNextAuthのユーザーIDをそのまま使用
-        // 本番環境ではSupabase Authと統合
-        console.log('User signed in:', user.email)
+        const supabase = await createClient()
+
+        // profilesテーブルにユーザー情報を保存（存在しない場合のみ）
+        const { data: existingProfile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', user.id)
+          .single()
+
+        if (!existingProfile) {
+          const { error: insertError } = await supabase
+            .from('profiles')
+            .insert({
+              id: user.id,
+              full_name: user.name || user.email,
+              avatar_url: user.image,
+              username: user.email?.split('@')[0],
+            })
+
+          if (insertError) {
+            console.error('Error creating profile:', insertError)
+          } else {
+            console.log('Profile created for:', user.email)
+          }
+        }
+
         return true
       } catch (error) {
         console.error('SignIn error:', error)

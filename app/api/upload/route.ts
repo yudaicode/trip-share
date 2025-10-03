@@ -1,18 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
-import { writeFile, mkdir } from "fs/promises"
-import { join } from "path"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { createClient } from "@/lib/supabase/server"
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-
-    // ゲストユーザーも画像アップロード可能にする
-    // if (!session || !session.user) {
-    //   return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    // }
-
     const data = await request.formData()
     const file: File | null = data.get('file') as unknown as File
 
@@ -31,34 +21,43 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid file type. Only JPEG, PNG, and WebP are allowed" }, { status: 400 })
     }
 
-    const bytes = await file.arrayBuffer()
-    const buffer = Buffer.from(bytes)
-
-    // アップロードディレクトリの作成
-    const uploadDir = join(process.cwd(), 'public', 'uploads')
-    try {
-      await mkdir(uploadDir, { recursive: true })
-    } catch (error) {
-      // ディレクトリが既に存在する場合は無視
-    }
+    const supabase = await createClient()
 
     // ファイル名の生成 (タイムスタンプ + ランダム文字列)
     const timestamp = Date.now()
     const randomString = Math.random().toString(36).substring(2, 15)
     const extension = file.name.split('.').pop()
     const filename = `${timestamp}_${randomString}.${extension}`
-    
-    // ファイルの保存
-    const path = join(uploadDir, filename)
-    await writeFile(path, buffer)
 
-    // パブリックURLの生成
-    const imageUrl = `/uploads/${filename}`
+    // Supabase Storageにアップロード
+    const bytes = await file.arrayBuffer()
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('trip-images')
+      .upload(filename, bytes, {
+        contentType: file.type,
+        cacheControl: '3600',
+        upsert: false
+      })
 
-    return NextResponse.json({ 
-      success: true, 
+    if (uploadError) {
+      console.error("Supabase upload error:", uploadError)
+      return NextResponse.json(
+        { error: "Failed to upload to storage", details: uploadError.message },
+        { status: 500 }
+      )
+    }
+
+    // パブリックURLの取得
+    const { data: publicUrlData } = supabase.storage
+      .from('trip-images')
+      .getPublicUrl(filename)
+
+    const imageUrl = publicUrlData.publicUrl
+
+    return NextResponse.json({
+      success: true,
       imageUrl,
-      filename 
+      filename
     })
   } catch (error) {
     console.error("Error uploading file:", error)
