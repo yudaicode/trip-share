@@ -1,21 +1,20 @@
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import Header from "@/components/Header"
 import DashboardContent from "@/components/dashboard/dashboard-content"
 
 export default async function DashboardPage() {
-  const supabase = await createClient()
+  const session = await getServerSession(authOptions)
 
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect('/login')
+  if (!session?.user) {
+    redirect('/auth/signin')
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-pink-50">
       <Header />
-      <DashboardContent user={user} />
+      <DashboardContent user={session.user} />
     </div>
   )
 }

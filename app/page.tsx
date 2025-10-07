@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-// import { useSession } from "next-auth/react"
+import { useSession } from "next-auth/react"
 import Link from "next/link"
 import Header from "@/components/Header"
 import TripCard from "@/components/TripCard"
@@ -118,8 +118,7 @@ const features = [
 ]
 
 export default function Home() {
-  // const { data: session } = useSession()
-  const session = { user: { name: "テストユーザー", email: "test@example.com", id: "1" } } // 一時的にログイン状態をシミュレート
+  const { data: session } = useSession()
   const [trips, setTrips] = useState<Array<{
     id: string
     title: string
