@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { motion } from "framer-motion"
 import {
   ArrowLeft, Calendar, MapPin, User, Users, Heart, MessageCircle,
-  Share2, Clock, Tag, Edit, Trash2, ZoomIn, Bookmark
+  Share2, Clock, Tag, Edit, Trash2, ZoomIn, Bookmark, Copy
 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
@@ -69,6 +69,7 @@ export default function TripDetailPage() {
   const [isBookmarkLoading, setIsBookmarkLoading] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
+  const [isCopying, setIsCopying] = useState(false)
 
   useEffect(() => {
     fetchTripDetail()
@@ -183,6 +184,70 @@ export default function TripDetailPage() {
     }
   }
 
+  const handleCopyTrip = async () => {
+    if (!session?.user) {
+      router.push('/auth/signin')
+      return
+    }
+
+    if (!confirm('このプランをコピーして新しい旅行プランを作成しますか？')) {
+      return
+    }
+
+    setIsCopying(true)
+    try {
+      if (!trip) return
+
+      // 日別スケジュールを整形
+      const daySchedules = trip.daySchedules.map(day => ({
+        dayNumber: day.dayNumber,
+        date: day.date,
+        title: day.title,
+        activities: day.activities.map(activity => ({
+          time: activity.time,
+          title: activity.title,
+          type: activity.type,
+          location: activity.location,
+          description: activity.description,
+          duration: activity.duration,
+          images: activity.images ? JSON.parse(activity.images) : [],
+        }))
+      }))
+
+      // 新しいプランを作成
+      const response = await fetch('/api/trips', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: `${trip.title} (コピー)`,
+          description: trip.description,
+          category: trip.category,
+          startDate: trip.startDate,
+          endDate: trip.endDate,
+          travelerCount: trip.travelerCount || 1,
+          coverImage: trip.coverImage,
+          isPublic: false, // コピーはデフォルトで非公開
+          daySchedules
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('プランのコピーに失敗しました')
+      }
+
+      const createdTrip = await response.json()
+      alert('プランをコピーしました！編集ページに移動します。')
+      router.push(`/trips/${createdTrip.id}/edit`)
+    } catch (error) {
+      console.error('コピーエラー:', error)
+      alert('プランのコピーに失敗しました')
+    } finally {
+      setIsCopying(false)
+    }
+  }
+
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -285,6 +350,17 @@ export default function TripDetailPage() {
                     <span className="hidden sm:inline">{isDeleting ? '削除中...' : '削除'}</span>
                   </Button>
                 </>
+              )}
+              {session?.user?.id !== trip.user.id && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCopyTrip}
+                  disabled={isCopying}
+                >
+                  <Copy className="h-4 w-4 sm:mr-1" />
+                  <span className="hidden sm:inline">{isCopying ? 'コピー中...' : 'コピーして作成'}</span>
+                </Button>
               )}
               <ShareButton
                 tripId={trip.id}

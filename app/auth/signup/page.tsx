@@ -1,14 +1,14 @@
 "use client"
 
 import { useState } from "react"
-// import { signIn } from "next-auth/react"
+import { signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import Header from "@/components/Header"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { motion } from "framer-motion"
-import { Mail, Github, ArrowLeft, Sparkles, UserPlus } from "lucide-react"
+import { Mail, ArrowLeft, UserPlus } from "lucide-react"
 
 export default function SignUpPage() {
   const router = useRouter()
@@ -16,32 +16,57 @@ export default function SignUpPage() {
   const [name, setName] = useState("")
   const [isLoading, setIsLoading] = useState(false)
 
+  const [password, setPassword] = useState("")
+  const [error, setError] = useState("")
+
   const handleEmailSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!email || !name) return
+    if (!email || !name || !password) return
 
+    setError("")
     setIsLoading(true)
     try {
-      // 一時的に認証を無効化
-      await new Promise(resolve => setTimeout(resolve, 1000)) // シミュレート
-      alert("アカウントが作成されました！（デモモード）")
-      router.push("/")
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password, name }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setError(data.error || "アカウント作成に失敗しました")
+        return
+      }
+
+      // 登録成功後、自動ログイン
+      const signInResult = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      })
+
+      if (signInResult?.ok) {
+        router.push("/dashboard")
+      } else {
+        // ログイン失敗した場合はサインインページへ
+        router.push("/auth/signin")
+      }
     } catch (error) {
       console.error("サインアップエラー:", error)
-      alert("アカウント作成に失敗しました")
+      setError("アカウント作成に失敗しました")
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleGitHubSignUp = () => {
-    // 一時的に認証を無効化
-    alert("GitHubサインアップは現在利用できません（デモモード）")
-  }
-
   const handleGoogleSignUp = () => {
-    // 一時的に認証を無効化
-    alert("Googleサインアップは現在利用できません（デモモード）")
+    setIsLoading(true)
+    // signIn("google", { callbackUrl: "/dashboard" })
+    alert("Googleサインアップは近日公開予定です")
+    setIsLoading(false)
   }
 
   return (
@@ -104,10 +129,32 @@ export default function SignUpPage() {
                     required
                   />
                 </div>
+                <div>
+                  <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                    パスワード *
+                  </label>
+                  <input
+                    type="password"
+                    id="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="8文字以上"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                    minLength={8}
+                  />
+                </div>
+
+                {error && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">
+                    {error}
+                  </div>
+                )}
+
                 <Button
                   type="submit"
                   className="w-full"
-                  disabled={isLoading || !email || !name}
+                  disabled={isLoading || !email || !name || !password}
                 >
                   <Mail className="h-4 w-4 mr-2" />
                   {isLoading ? "作成中..." : "アカウント作成"}
@@ -128,15 +175,8 @@ export default function SignUpPage() {
                 <Button
                   variant="outline"
                   className="w-full"
-                  onClick={handleGitHubSignUp}
-                >
-                  <Github className="h-4 w-4 mr-2" />
-                  GitHubでサインアップ
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full"
                   onClick={handleGoogleSignUp}
+                  disabled={isLoading}
                 >
                   <svg className="h-4 w-4 mr-2" viewBox="0 0 24 24">
                     <path
