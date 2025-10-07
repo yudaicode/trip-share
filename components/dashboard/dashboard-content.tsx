@@ -11,7 +11,6 @@ import {
   TrendingUp, BarChart3, Eye, Bookmark
 } from "lucide-react"
 import Link from "next/link"
-import { User as SupabaseUser } from '@supabase/supabase-js'
 
 interface UserTrip {
   id: string
@@ -38,7 +37,12 @@ interface DashboardStats {
 }
 
 interface DashboardContentProps {
-  user: SupabaseUser
+  user: {
+    id: string
+    name?: string | null
+    email?: string | null
+    image?: string | null
+  }
 }
 
 export default function DashboardContent({ user }: DashboardContentProps) {
