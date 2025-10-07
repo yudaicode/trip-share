@@ -1,8 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
-import { createClient } from '@/lib/supabase/client'
 import Header from "@/components/Header"
 import TripCard from "@/components/TripCard"
 import { Card, CardContent } from "@/components/ui/card"
@@ -13,51 +13,43 @@ import { Button } from "@/components/ui/button"
 
 interface BookmarkedTrip {
   id: string
-  created_at: string
-  trip_schedule: {
-    id: string
-    title: string
-    description: string
-    category: string
-    start_date: string
-    end_date: string
-    traveler_count: number
-    cover_image: string | null
-    user: {
-      id: string
-      name: string
-      avatar?: string
-    }
-    _count: {
-      likes: number
-      comments: number
-    }
+  title: string
+  description: string
+  category: string
+  startDate: string
+  endDate: string
+  travelerCount: number
+  coverImage: string | null
+  isPublic: boolean
+  createdAt: string
+  user: {
+    name: string
+  }
+  _count: {
+    likes: number
+    comments: number
   }
 }
 
 export default function BookmarksPage() {
-  const supabase = createClient()
+  const { data: session, status } = useSession()
   const router = useRouter()
   const [bookmarks, setBookmarks] = useState<BookmarkedTrip[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [user, setUser] = useState<any>(null)
 
   useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        router.push("/login?callbackUrl=/bookmarks")
-      } else {
-        setUser(user)
-        fetchBookmarks()
-      }
+    if (status === "unauthenticated") {
+      router.push("/auth/signin")
+    } else if (status === "authenticated" && session?.user) {
+      fetchBookmarks()
     }
-    getUser()
-  }, [router])
+  }, [status, session, router])
 
   const fetchBookmarks = async () => {
+    if (!session?.user?.id) return
+
     try {
-      const response = await fetch('/api/users/bookmarks')
+      const response = await fetch(`/api/users/${session.user.id}/bookmarks`)
       if (response.ok) {
         const data = await response.json()
         setBookmarks(data)
@@ -69,7 +61,7 @@ export default function BookmarksPage() {
     }
   }
 
-  if (isLoading) {
+  if (status === "loading" || isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-pink-50">
         <Header />
@@ -82,7 +74,7 @@ export default function BookmarksPage() {
     )
   }
 
-  if (!user) {
+  if (!session) {
     return null
   }
 
@@ -139,17 +131,17 @@ export default function BookmarksPage() {
                     transition={{ duration: 0.3, delay: index * 0.1 }}
                   >
                     <TripCard
-                      id={bookmark.trip_schedule.id}
-                      title={bookmark.trip_schedule.title}
-                      description={bookmark.trip_schedule.description}
-                      category={bookmark.trip_schedule.category}
-                      startDate={new Date(bookmark.trip_schedule.start_date)}
-                      endDate={new Date(bookmark.trip_schedule.end_date)}
-                      travelerCount={bookmark.trip_schedule.traveler_count}
-                      likes={bookmark.trip_schedule._count.likes}
-                      comments={bookmark.trip_schedule._count.comments}
-                      userName={bookmark.trip_schedule.user.name}
-                      coverImage={bookmark.trip_schedule.cover_image}
+                      id={bookmark.id}
+                      title={bookmark.title}
+                      description={bookmark.description}
+                      category={bookmark.category}
+                      startDate={new Date(bookmark.startDate)}
+                      endDate={new Date(bookmark.endDate)}
+                      travelerCount={bookmark.travelerCount}
+                      likes={bookmark._count.likes}
+                      comments={bookmark._count.comments}
+                      userName={bookmark.user.name}
+                      coverImage={bookmark.coverImage}
                     />
                   </motion.div>
                 ))}

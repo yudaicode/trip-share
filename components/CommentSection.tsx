@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { MessageCircle, Send, User } from "lucide-react"
+import { MessageCircle, Send, User, Trash2 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 
 interface Comment {
@@ -31,6 +31,7 @@ export default function CommentSection({ tripId, initialCommentsCount = 0 }: Com
   const [newComment, setNewComment] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   useEffect(() => {
     fetchComments()
@@ -83,6 +84,31 @@ export default function CommentSection({ tripId, initialCommentsCount = 0 }: Com
       alert("コメントの投稿に失敗しました")
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!confirm("このコメントを削除しますか？")) return
+
+    setDeletingId(commentId)
+    try {
+      const response = await fetch(
+        `/api/trips/${tripId}/comments?commentId=${commentId}`,
+        {
+          method: "DELETE",
+        }
+      )
+
+      if (response.ok) {
+        setComments(comments.filter((c) => c.id !== commentId))
+      } else {
+        alert("コメントの削除に失敗しました")
+      }
+    } catch (error) {
+      console.error("コメント削除エラー:", error)
+      alert("コメントの削除に失敗しました")
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -198,13 +224,30 @@ export default function CommentSection({ tripId, initialCommentsCount = 0 }: Com
                     </div>
                   )}
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-medium text-sm">
-                        {comment.user.name || "匿名ユーザー"}
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        {formatDate(comment.createdAt)}
-                      </span>
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-sm">
+                          {comment.user.name || "匿名ユーザー"}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          {formatDate(comment.createdAt)}
+                        </span>
+                      </div>
+                      {session?.user?.id === comment.user.id && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteComment(comment.id)}
+                          disabled={deletingId === comment.id}
+                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          {deletingId === comment.id ? (
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </Button>
+                      )}
                     </div>
                     <p className="text-sm text-gray-700 whitespace-pre-wrap">
                       {comment.content}

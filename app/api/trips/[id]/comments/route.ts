@@ -30,11 +30,11 @@ export async function GET(
       )
     }
 
-    // Get user details from NextAuth User table via Supabase
+    // Get user details from profiles table
     const userIds = [...new Set(comments?.map(c => c.user_id) || [])]
     const { data: users } = await supabase
-      .from('User')
-      .select('id, name, avatar')
+      .from('profiles')
+      .select('id, username, full_name, avatar_url')
       .in('id', userIds)
 
     const userMap = new Map(users?.map(u => [u.id, u]) || [])
@@ -48,8 +48,8 @@ export async function GET(
         createdAt: comment.created_at,
         user: {
           id: comment.user_id,
-          name: user?.name || '匿名ユーザー',
-          image: user?.avatar || null
+          name: user?.full_name || user?.username || '匿名ユーザー',
+          image: user?.avatar_url || null
         }
       }
     })
@@ -111,10 +111,10 @@ export async function POST(
       )
     }
 
-    // Get user details from NextAuth User table via Supabase
+    // Get user details from profiles table
     const { data: user } = await supabase
-      .from('User')
-      .select('name, avatar')
+      .from('profiles')
+      .select('username, full_name, avatar_url')
       .eq('id', session.user.id)
       .single()
 
@@ -125,8 +125,8 @@ export async function POST(
       createdAt: comment.created_at,
       user: {
         id: comment.user_id,
-        name: user?.name || session.user.name || '匿名ユーザー',
-        image: user?.avatar || session.user.image || null
+        name: user?.full_name || user?.username || session.user.name || '匿名ユーザー',
+        image: user?.avatar_url || session.user.image || null
       }
     }
 
@@ -135,6 +135,74 @@ export async function POST(
     console.error("Error creating comment:", error)
     return NextResponse.json(
       { error: "Failed to create comment" },
+      { status: 500 }
+    )
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await getServerSession(authOptions)
+
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const supabase = await createClient()
+    const { id } = await params
+    const url = new URL(request.url)
+    const commentId = url.searchParams.get('commentId')
+
+    if (!commentId) {
+      return NextResponse.json(
+        { error: "Comment ID is required" },
+        { status: 400 }
+      )
+    }
+
+    // Check if comment exists and user owns it
+    const { data: comment, error: fetchError } = await supabase
+      .from('trip_comments')
+      .select('user_id')
+      .eq('id', commentId)
+      .single()
+
+    if (fetchError || !comment) {
+      return NextResponse.json(
+        { error: "Comment not found" },
+        { status: 404 }
+      )
+    }
+
+    if (comment.user_id !== session.user.id) {
+      return NextResponse.json(
+        { error: "Forbidden" },
+        { status: 403 }
+      )
+    }
+
+    // Delete comment
+    const { error: deleteError } = await supabase
+      .from('trip_comments')
+      .delete()
+      .eq('id', commentId)
+
+    if (deleteError) {
+      console.error("Error deleting comment:", deleteError)
+      return NextResponse.json(
+        { error: "Failed to delete comment" },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({ message: "Comment deleted successfully" })
+  } catch (error) {
+    console.error("Error deleting comment:", error)
+    return NextResponse.json(
+      { error: "Failed to delete comment" },
       { status: 500 }
     )
   }
