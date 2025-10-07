@@ -22,6 +22,7 @@ interface TripCardProps {
   comments: number
   userName: string
   userAvatar?: string
+  userId?: string
 }
 
 export default function TripCard({
@@ -37,6 +38,7 @@ export default function TripCard({
   comments,
   userName,
   userAvatar,
+  userId,
 }: TripCardProps) {
   const router = useRouter()
   const { data: session } = useSession()
@@ -176,7 +178,17 @@ export default function TripCard({
               <div className="h-8 w-8 rounded-full bg-gradient-to-r from-blue-400 to-pink-400 flex items-center justify-center text-white text-xs font-bold">
                 {userName.charAt(0).toUpperCase()}
               </div>
-              <span className="text-sm font-medium text-gray-700">{userName}</span>
+              {userId ? (
+                <Link
+                  href={`/profile/${userId}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="text-sm font-medium text-gray-700 hover:text-blue-600 hover:underline"
+                >
+                  {userName}
+                </Link>
+              ) : (
+                <span className="text-sm font-medium text-gray-700">{userName}</span>
+              )}
             </div>
           </CardContent>
           

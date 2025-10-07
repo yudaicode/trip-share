@@ -274,6 +274,7 @@ export default function Home() {
                   likes={trip._count?.likes || 0}
                   comments={trip._count?.comments || 0}
                   userName={trip.user?.name || 'ゲストユーザー'}
+                  userId={trip.user_id}
                   coverImage={trip.cover_image}
                 />
               </motion.div>

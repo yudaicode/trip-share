@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { MessageCircle, Send, User, Trash2 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
+import Link from "next/link"
 
 interface Comment {
   id: string
@@ -226,9 +227,12 @@ export default function CommentSection({ tripId, initialCommentsCount = 0 }: Com
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-2">
-                        <span className="font-medium text-sm">
+                        <Link
+                          href={`/profile/${comment.user.id}`}
+                          className="font-medium text-sm hover:text-blue-600 hover:underline"
+                        >
                           {comment.user.name || "匿名ユーザー"}
-                        </span>
+                        </Link>
                         <span className="text-xs text-gray-500">
                           {formatDate(comment.createdAt)}
                         </span>
