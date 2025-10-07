@@ -2,18 +2,14 @@
 
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
-// import { useSession } from "next-auth/react"
+import { useSession } from "next-auth/react"
 import Header from "@/components/Header"
 import DaySchedule from "@/components/DaySchedule"
 import ImageUpload from "@/components/ImageUpload"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { motion } from "framer-motion"
-import { ArrowLeft, Save, Loader2, Calendar, ChevronDown, ChevronUp } from "lucide-react"
+import { ArrowLeft, Save, Calendar, MapPin, ChevronDown, ChevronUp } from "lucide-react"
 import Link from "next/link"
 import { Activity } from "@/components/ActivityItem"
 
@@ -45,17 +41,26 @@ interface TripDetail {
       location: string | null
       description: string | null
       duration: string | null
-      images: string
+      images: string[] | string
     }>
   }>
 }
 
+const categories = [
+  "国内旅行",
+  "海外旅行",
+  "グルメ旅",
+  "アクティビティ",
+  "日帰り旅行",
+  "温泉・リラックス",
+  "文化・歴史",
+  "自然・アウトドア"
+]
+
 export default function EditTripPage() {
   const params = useParams()
   const router = useRouter()
-  // const { data: session, status } = useSession()
-  const session = { user: { name: "テストユーザー", email: "test@example.com", id: "1" } }
-  const status = "authenticated" as const
+  const { data: session, status } = useSession()
   const [trip, setTrip] = useState<TripDetail | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -70,7 +75,7 @@ export default function EditTripPage() {
     travelerCount: 1,
     schedule: {} as { [day: number]: Activity[] }
   })
-  const [showSchedule, setShowSchedule] = useState(false)
+  const [showSchedule, setShowSchedule] = useState(true)
   const [tripDays, setTripDays] = useState<Array<{ dayNumber: number; date: string }>>([])
 
   useEffect(() => {
@@ -86,7 +91,7 @@ export default function EditTripPage() {
         throw new Error('旅行プランの取得に失敗しました')
       }
       const data = await response.json()
-      
+
       // 権限チェック
       if (data.user.id !== session?.user?.id) {
         alert('編集権限がありません')
@@ -101,251 +106,387 @@ export default function EditTripPage() {
       data.daySchedules.forEach((day: any) => {
         schedule[day.dayNumber] = day.activities.map((activity: any) => ({
           id: activity.id,
-          time: activity.time,
-          title: activity.title,
-          type: activity.type,
-          location: activity.location || '',
-          description: activity.description || '',
-          duration: activity.duration || '',
-          images: JSON.parse(activity.images || '[]')
+          time: activity.time || "",
+          title: activity.title || "",
+          type: activity.type || "観光",
+          location: activity.location || "",
+          description: activity.description || "",
+          duration: activity.duration || "",
+          images: Array.isArray(activity.images) ? activity.images : []
         }))
       })
 
       setFormData({
-        title: data.title,
-        description: data.description,
-        category: data.category,
-        startDate: data.startDate.split('T')[0],
-        endDate: data.endDate.split('T')[0],
-        isPublic: data.isPublic,
-        coverImage: data.coverImage || '',
+        title: data.title || "",
+        description: data.description || "",
+        category: data.category || "",
+        startDate: data.startDate || "",
+        endDate: data.endDate || "",
+        isPublic: data.isPublic !== undefined ? data.isPublic : true,
+        coverImage: data.coverImage || "",
         travelerCount: data.travelerCount || 1,
         schedule
       })
 
-      setShowSchedule(true)
     } catch (error) {
-      console.error('取得エラー:', error)
-      alert('旅行プランが見つかりませんでした')
-      router.push('/')
+      console.error("取得エラー:", error)
+      alert("旅行プランの取得に失敗しました")
+      router.push('/dashboard')
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleInputChange = (field: string, value: string | boolean | number) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [name]: name === 'travelerCount' ? parseInt(value) : value
     }))
   }
 
-  const handleSave = async (e: React.FormEvent) => {
+  const generateTripDays = (startDate: string, endDate: string) => {
+    if (!startDate || !endDate) return []
+
+    const start = new Date(startDate)
+    const end = new Date(endDate)
+    const days = []
+
+    const current = new Date(start)
+    let dayNumber = 1
+
+    while (current <= end) {
+      days.push({
+        dayNumber,
+        date: current.toISOString().split('T')[0]
+      })
+      current.setDate(current.getDate() + 1)
+      dayNumber++
+    }
+
+    return days
+  }
+
+  useEffect(() => {
+    if (formData.startDate && formData.endDate) {
+      const days = generateTripDays(formData.startDate, formData.endDate)
+      setTripDays(days)
+
+      // 既存のスケジュールデータを保持しつつ、新しい日程用の空配列を準備
+      const newSchedule = { ...formData.schedule }
+      days.forEach(day => {
+        if (!newSchedule[day.dayNumber]) {
+          newSchedule[day.dayNumber] = []
+        }
+      })
+
+      // 不要な日程のデータを削除
+      Object.keys(newSchedule).forEach(dayStr => {
+        const dayNum = parseInt(dayStr)
+        if (!days.find(d => d.dayNumber === dayNum)) {
+          delete newSchedule[dayNum]
+        }
+      })
+
+      setFormData(prev => ({ ...prev, schedule: newSchedule }))
+
+      if (days.length > 0) {
+        setShowSchedule(true)
+      }
+    } else {
+      setTripDays([])
+      setShowSchedule(false)
+    }
+  }, [formData.startDate, formData.endDate])
+
+  const handleUpdateActivities = (dayNumber: number, activities: Activity[]) => {
+    setFormData(prev => ({
+      ...prev,
+      schedule: {
+        ...prev.schedule,
+        [dayNumber]: activities
+      }
+    }))
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    if (!formData.title.trim() || !formData.description.trim()) {
-      alert('タイトルと説明は必須です')
-      return
-    }
-
-    if (new Date(formData.startDate) > new Date(formData.endDate)) {
-      alert('終了日は開始日以降に設定してください')
-      return
-    }
-
     setIsSaving(true)
+
     try {
+      // 日別スケジュールを整形
+      const daySchedules = tripDays.map(day => ({
+        dayNumber: day.dayNumber,
+        date: day.date,
+        title: `${day.dayNumber}日目`,
+        activities: formData.schedule[day.dayNumber] || []
+      }))
+
+      // API用のデータを作成
+      const tripData = {
+        title: formData.title,
+        description: formData.description,
+        category: formData.category,
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+        travelerCount: formData.travelerCount,
+        coverImage: formData.coverImage || null,
+        isPublic: formData.isPublic,
+        daySchedules
+      }
+
       const response = await fetch(`/api/trips/${params.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(tripData)
       })
 
-      if (response.ok) {
-        alert('旅行プランを更新しました')
-        router.push(`/trips/${params.id}`)
-      } else {
+      if (!response.ok) {
         const error = await response.json()
-        alert(`更新に失敗しました: ${error.error}`)
+        throw new Error(error.error || '更新に失敗しました')
       }
+
+      alert('旅行プランを更新しました')
+      router.push(`/trips/${params.id}`)
     } catch (error) {
-      console.error('更新エラー:', error)
-      alert('更新に失敗しました')
+      console.error("更新エラー:", error)
+      alert("旅行プランの更新に失敗しました。もう一度お試しください。")
     } finally {
       setIsSaving(false)
     }
   }
 
-  if (isLoading) {
+  const isFormValid = formData.title && formData.description && formData.category && formData.startDate && formData.endDate
+  const totalDays = tripDays.length
+
+  // 認証チェック
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/auth/signin")
+    }
+  }, [status, router])
+
+  // ローディング中
+  if (status === "loading" || isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-pink-50">
-        <Header />
-        <div className="container mx-auto px-4 py-16">
-          <div className="flex justify-center items-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          </div>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     )
   }
 
-  if (!session || !trip) {
+  // 未認証の場合
+  if (!session) {
     return null
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-pink-50">
       <Header />
-      
-      <div className="container mx-auto px-4 py-8 max-w-2xl">
+
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center mb-6">
             <Link href={`/trips/${params.id}`}>
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" className="mr-3">
                 <ArrowLeft className="h-4 w-4 mr-1" />
                 戻る
               </Button>
             </Link>
-            <h1 className="text-2xl font-bold">旅行プランを編集</h1>
-            <div></div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-pink-600 bg-clip-text text-transparent">
+              旅を編集
+            </h1>
           </div>
 
           <Card>
             <CardHeader>
-              <CardTitle>基本情報</CardTitle>
+              <CardTitle className="flex items-center">
+                <MapPin className="h-5 w-5 mr-2 text-blue-500" />
+                旅行プラン情報
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleSave} className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="title">タイトル *</Label>
-                  <Input
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div>
+                  <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
+                    タイトル *
+                  </label>
+                  <input
+                    type="text"
                     id="title"
+                    name="title"
                     value={formData.title}
-                    onChange={(e) => handleInputChange('title', e.target.value)}
-                    placeholder="旅行プランのタイトル"
+                    onChange={handleInputChange}
+                    placeholder="例：東京3日間の食べ歩き旅"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="description">説明 *</Label>
-                  <Textarea
+                <div>
+                  <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+                    説明 *
+                  </label>
+                  <textarea
                     id="description"
+                    name="description"
                     value={formData.description}
-                    onChange={(e) => handleInputChange('description', e.target.value)}
-                    placeholder="旅行プランの説明"
+                    onChange={handleInputChange}
                     rows={4}
+                    placeholder="旅行プランの詳細を記入してください..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="category">カテゴリー</Label>
-                  <Select 
-                    value={formData.category} 
-                    onValueChange={(value) => handleInputChange('category', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="カテゴリーを選択" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="国内旅行">国内旅行</SelectItem>
-                      <SelectItem value="海外旅行">海外旅行</SelectItem>
-                      <SelectItem value="グルメ旅">グルメ旅</SelectItem>
-                      <SelectItem value="アウトドア">アウトドア</SelectItem>
-                      <SelectItem value="文化・歴史">文化・歴史</SelectItem>
-                      <SelectItem value="リラックス">リラックス</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    カバー画像
+                  </label>
+                  <ImageUpload
+                    images={formData.coverImage ? [formData.coverImage] : []}
+                    onImagesChange={(images) =>
+                      setFormData(prev => ({ ...prev, coverImage: images[0] || "" }))
+                    }
+                    maxImages={1}
+                    enableServerUpload={true}
+                    showLabel={false}
+                  />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="startDate">開始日</Label>
-                    <Input
+                <div>
+                  <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
+                    カテゴリー *
+                  </label>
+                  <select
+                    id="category"
+                    name="category"
+                    value={formData.category}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  >
+                    <option value="">カテゴリーを選択</option>
+                    {categories.map((category) => (
+                      <option key={category} value={category}>
+                        {category}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-2">
+                      開始日 *
+                    </label>
+                    <input
+                      type="date"
                       id="startDate"
-                      type="date"
+                      name="startDate"
                       value={formData.startDate}
-                      onChange={(e) => handleInputChange('startDate', e.target.value)}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       required
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="endDate">終了日</Label>
-                    <Input
-                      id="endDate"
+
+                  <div>
+                    <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-2">
+                      終了日 *
+                    </label>
+                    <input
                       type="date"
+                      id="endDate"
+                      name="endDate"
                       value={formData.endDate}
-                      onChange={(e) => handleInputChange('endDate', e.target.value)}
+                      onChange={handleInputChange}
+                      min={formData.startDate}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       required
                     />
                   </div>
-                </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="travelerCount">人数</Label>
-                  <Select
-                    value={formData.travelerCount.toString()}
-                    onValueChange={(value) => handleInputChange('travelerCount', parseInt(value))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="人数を選択" />
-                    </SelectTrigger>
-                    <SelectContent>
+                  <div>
+                    <label htmlFor="travelerCount" className="block text-sm font-medium text-gray-700 mb-2">
+                      人数 *
+                    </label>
+                    <select
+                      id="travelerCount"
+                      name="travelerCount"
+                      value={formData.travelerCount}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
+                    >
                       {Array.from({ length: 20 }, (_, i) => i + 1).map((num) => (
-                        <SelectItem key={num} value={num.toString()}>
+                        <option key={num} value={num}>
                           {num}人
-                        </SelectItem>
+                        </option>
                       ))}
-                    </SelectContent>
-                  </Select>
+                    </select>
+                  </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>公開設定</Label>
-                  <Select 
-                    value={formData.isPublic.toString()} 
-                    onValueChange={(value) => handleInputChange('isPublic', value === 'true')}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="true">公開</SelectItem>
-                      <SelectItem value="false">非公開</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                {showSchedule && totalDays > 0 && (
+                  <div>
+                    <div
+                      className="flex items-center justify-between cursor-pointer mb-4"
+                      onClick={() => setShowSchedule(!showSchedule)}
+                    >
+                      <div className="flex items-center">
+                        <Calendar className="h-5 w-5 text-blue-500 mr-2" />
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          詳細スケジュール ({totalDays}日間)
+                        </h3>
+                      </div>
+                      {showSchedule ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                    </div>
 
-                <div className="flex gap-4 pt-4">
-                  <Button
-                    type="submit"
-                    disabled={isSaving}
-                    className="flex-1"
-                  >
-                    {isSaving ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        保存中...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="h-4 w-4 mr-2" />
-                        保存
-                      </>
-                    )}
-                  </Button>
-                  <Link href={`/trips/${params.id}`}>
-                    <Button type="button" variant="outline">
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <p className="text-sm text-gray-600 mb-4">
+                        各日のアクティビティを時間順に追加して、詳細な旅行スケジュールを作成しましょう。
+                      </p>
+
+                      {tripDays.map((day) => (
+                        <DaySchedule
+                          key={day.dayNumber}
+                          dayNumber={day.dayNumber}
+                          date={day.date}
+                          activities={formData.schedule[day.dayNumber] || []}
+                          onUpdateActivities={handleUpdateActivities}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 pt-6">
+                  <Link href={`/trips/${params.id}`} className="w-full sm:w-auto">
+                    <Button variant="outline" type="button" className="w-full">
                       キャンセル
                     </Button>
                   </Link>
+                  <Button
+                    type="submit"
+                    disabled={isSaving || !isFormValid}
+                    className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-pink-600 hover:from-blue-700 hover:to-pink-700"
+                  >
+                    {isSaving ? (
+                      "保存中..."
+                    ) : (
+                      <>
+                        <Save className="h-4 w-4 mr-2" />
+                        変更を保存
+                      </>
+                    )}
+                  </Button>
                 </div>
               </form>
             </CardContent>
