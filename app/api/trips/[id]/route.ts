@@ -125,8 +125,8 @@ export async function PUT(
     const { id } = await params
     const body = await request.json()
 
-    // 管理者権限でSupabaseにアクセス（RLSバイパス）
-    const supabase = createAdminClient()
+    // Supabaseクライアントを作成
+    const supabase = await createClient()
 
     // 旅行プランの所有者確認
     const { data: existingTrip, error: tripError } = await supabase
@@ -205,8 +205,8 @@ export async function DELETE(
 
     const { id } = await params
 
-    // 管理者権限でSupabaseにアクセス（RLSバイパス）
-    const supabase = createAdminClient()
+    // Supabaseクライアントを作成
+    const supabase = await createClient()
 
     // 旅行プランの所有者確認
     const { data: existingTrip, error: tripError } = await supabase
