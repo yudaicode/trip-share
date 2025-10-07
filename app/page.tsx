@@ -124,10 +124,10 @@ export default function Home() {
     title: string
     description: string
     category: string
-    startDate: string
-    endDate: string
-    travelerCount: number
-    coverImage: string | null
+    start_date: string
+    end_date: string
+    traveler_count: number
+    cover_image: string | null
     user?: { name: string }
     _count?: { likes: number; comments: number }
   }>>([])
@@ -267,13 +267,13 @@ export default function Home() {
                   title={trip.title}
                   description={trip.description}
                   category={trip.category}
-                  startDate={new Date(trip.startDate)}
-                  endDate={new Date(trip.endDate)}
-                  travelerCount={trip.travelerCount}
+                  startDate={new Date(trip.start_date)}
+                  endDate={new Date(trip.end_date)}
+                  travelerCount={trip.traveler_count}
                   likes={trip._count?.likes || 0}
                   comments={trip._count?.comments || 0}
                   userName={trip.user?.name || 'ゲストユーザー'}
-                  coverImage={trip.coverImage}
+                  coverImage={trip.cover_image}
                 />
               </motion.div>
             ))
