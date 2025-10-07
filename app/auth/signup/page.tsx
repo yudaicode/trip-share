@@ -23,7 +23,6 @@ export default function SignUpPage() {
     setIsLoading(true)
     try {
       // 一時的に認証を無効化
-      console.log("アカウント作成:", { email, name })
       await new Promise(resolve => setTimeout(resolve, 1000)) // シミュレート
       alert("アカウントが作成されました！（デモモード）")
       router.push("/")

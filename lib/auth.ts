@@ -39,8 +39,6 @@ export const authOptions: NextAuthOptions = {
 
           if (insertError) {
             console.error('Error creating profile:', insertError)
-          } else {
-            console.log('Profile created for:', user.email)
           }
         }
 

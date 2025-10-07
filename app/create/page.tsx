@@ -125,7 +125,6 @@ export default function CreateTripPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log("フォーム送信開始", formData)
     setIsLoading(true)
 
     try {
@@ -164,8 +163,7 @@ export default function CreateTripPage() {
       }
 
       const createdTrip = await response.json()
-      console.log("旅行プラン作成成功:", createdTrip)
-      
+
       // 作成した旅行プランの詳細ページにリダイレクト
       router.push(`/trips/${createdTrip.id}`)
     } catch (error) {

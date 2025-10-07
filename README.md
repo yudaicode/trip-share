@@ -1,36 +1,184 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# タビネタ (Tabineta)
 
-## Getting Started
+旅行プランを作成・共有・探索できるコミュニティプラットフォーム
 
-First, run the development server:
+## 概要
 
+タビネタは、旅行好きな人々が自分の旅行プランを作成し、他のユーザーと共有できるWebアプリケーションです。他の人の旅行プランからインスピレーションを得て、次の旅行のアイデアを見つけることができます。
+
+## 主な機能
+
+### ✨ 実装済み機能 (MVP)
+
+- **認証システム**
+  - Google OAuth 2.0によるログイン
+  - NextAuth.js v4を使用
+
+- **旅行プラン作成・管理**
+  - 旅行プランの作成・編集・削除
+  - 日別スケジュールとアクティビティの管理
+  - カバー画像のアップロード (Supabase Storage)
+  - カテゴリー分類 (国内旅行、海外旅行、グルメ旅など)
+
+- **ソーシャル機能**
+  - 旅行プランへのいいね
+  - コメント機能
+  - ブックマーク機能
+  - ユーザープロフィール表示
+
+- **検索・探索**
+  - 旅行プランの検索
+  - カテゴリー別フィルタリング
+  - 人気順・最新順ソート
+
+- **ユーザープロフィール**
+  - プロフィール編集
+  - アバター画像アップロード
+  - 自分の旅行プラン一覧表示
+
+## 技術スタック
+
+### フロントエンド
+- **Next.js 15.4.6** - React フレームワーク (App Router)
+- **TypeScript** - 型安全性
+- **Tailwind CSS** - スタイリング
+- **Framer Motion** - アニメーション
+- **Lucide React** - アイコン
+
+### バックエンド・インフラ
+- **NextAuth.js v4.24.11** - 認証
+- **Supabase** - PostgreSQLデータベース + Storage
+- **Vercel** - ホスティング・デプロイ
+
+### データベース
+- **PostgreSQL (Supabase)**
+  - Row Level Security (RLS) による権限管理
+  - テーブル: profiles, trip_schedules, day_schedules, activities, trip_likes, trip_comments, trip_bookmarks
+
+## セットアップ
+
+### 前提条件
+- Node.js 18.x 以上
+- npm または yarn
+- Supabaseアカウント
+- Google Cloud Platform アカウント (OAuth設定用)
+
+### インストール
+
+1. リポジトリをクローン
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone <repository-url>
+cd trip-share
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. 依存関係をインストール
+```bash
+npm install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. 環境変数を設定
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+`.env.local` ファイルを作成し、以下の環境変数を設定:
 
-## Learn More
+```env
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
 
-To learn more about Next.js, take a look at the following resources:
+# NextAuth
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=your-nextauth-secret
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Google OAuth
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+4. データベースのセットアップ
 
-## Deploy on Vercel
+Supabaseダッシュボードでプロジェクトを作成後、以下のSQLスクリプトを実行:
+```bash
+# Supabase SQL Editorで実行
+# scripts/seed-supabase-fixed.sql の内容を実行
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+5. 開発サーバーを起動
+```bash
+npm run dev
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+ブラウザで http://localhost:3000 を開く
+
+## デプロイ (Vercel)
+
+### 手順
+
+1. Vercelにプロジェクトをインポート
+2. 環境変数を設定 (上記の`.env.local`と同じ変数)
+3. Google OAuth設定で承認済みリダイレクトURIに本番URLを追加:
+   - `https://your-app.vercel.app/api/auth/callback/google`
+4. デプロイ
+
+### 環境変数の確認方法
+```
+Vercelダッシュボード > プロジェクト > Settings > Environment Variables
+```
+
+## プロジェクト構成
+
+```
+trip-share/
+├── app/                      # Next.js App Router
+│   ├── api/                  # APIルート
+│   │   ├── auth/            # NextAuth設定
+│   │   ├── trips/           # 旅行プラン関連API
+│   │   ├── users/           # ユーザー関連API
+│   │   └── upload/          # 画像アップロード
+│   ├── dashboard/           # ダッシュボードページ
+│   ├── create/              # 旅行プラン作成ページ
+│   ├── trips/[id]/          # 旅行プラン詳細・編集
+│   └── explore/             # 探索ページ
+├── components/              # Reactコンポーネント
+│   ├── ui/                  # UIコンポーネント
+│   ├── dashboard/           # ダッシュボード関連
+│   └── profile/             # プロフィール関連
+├── lib/                     # ユーティリティ
+│   ├── auth.ts             # NextAuth設定
+│   └── supabase/           # Supabaseクライアント
+└── public/                  # 静的ファイル
+```
+
+## データベーススキーマ
+
+### 主要テーブル
+
+- **profiles** - ユーザープロフィール
+- **trip_schedules** - 旅行プラン
+- **day_schedules** - 日別スケジュール
+- **activities** - アクティビティ詳細
+- **trip_likes** - いいね
+- **trip_comments** - コメント
+- **trip_bookmarks** - ブックマーク
+
+詳細なスキーマは `lib/database.types.ts` を参照
+
+## 開発ガイドライン
+
+### コーディング規約
+- TypeScript strictモード
+- ESLint + Prettierによるコードフォーマット
+- コンポーネントはfunction宣言を使用
+- APIルートはエラーハンドリングを必須とする
+
+### デバッグ
+- 本番環境では`console.log`を使用しない（`console.error`のみ）
+- エラーハンドリングは全APIルートで実装
+
+## ライセンス
+
+MIT
+
+## 開発者
+
+タビネタ開発チーム
