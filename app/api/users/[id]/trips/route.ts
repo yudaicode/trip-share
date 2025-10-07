@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from '@/lib/supabase/server'
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
 
 export async function GET(
   request: NextRequest,
@@ -7,15 +9,14 @@ export async function GET(
 ) {
   try {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const session = await getServerSession(authOptions)
     const { id } = await params
 
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
+    // 認証は必須ではない（公開データは誰でも見られる）
+    const currentUserId = session?.user?.id
 
     // 自分のデータか、公開されているデータのみ取得可能
-    const isOwnData = user.id === id
+    const isOwnData = currentUserId === id
 
     let query = supabase
       .from('trip_schedules')

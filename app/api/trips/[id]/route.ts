@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from '@/lib/supabase/server'
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
 
 export async function GET(
   request: NextRequest,
@@ -114,10 +116,10 @@ export async function PUT(
 ) {
   try {
     const supabase = await createClient()
+    const session = await getServerSession(authOptions)
 
     // ユーザー認証確認
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
+    if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
@@ -135,7 +137,7 @@ export async function PUT(
       return NextResponse.json({ error: "Trip not found" }, { status: 404 })
     }
 
-    if (existingTrip.user_id !== user.id) {
+    if (existingTrip.user_id !== session.user.id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
@@ -193,10 +195,10 @@ export async function DELETE(
 ) {
   try {
     const supabase = await createClient()
+    const session = await getServerSession(authOptions)
 
     // ユーザー認証確認
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
+    if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
@@ -213,7 +215,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Trip not found" }, { status: 404 })
     }
 
-    if (existingTrip.user_id !== user.id) {
+    if (existingTrip.user_id !== session.user.id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
