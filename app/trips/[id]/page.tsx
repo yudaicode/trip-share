@@ -45,7 +45,7 @@ interface TripDetail {
       location: string | null
       description: string | null
       duration: string | null
-      images: string
+      images: string[] | string
     }>
   }>
   likes?: Array<{ userId: string }>
@@ -210,7 +210,8 @@ export default function TripDetailPage() {
           location: activity.location,
           description: activity.description,
           duration: activity.duration,
-          images: activity.images ? JSON.parse(activity.images) : [],
+          // imagesはすでにJSONB型なのでそのまま使用
+          images: Array.isArray(activity.images) ? activity.images : [],
         }))
       }))
 

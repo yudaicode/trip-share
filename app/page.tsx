@@ -142,7 +142,8 @@ export default function Home() {
       const response = await fetch('/api/trips')
       if (response.ok) {
         const data = await response.json()
-        setTrips(data)
+        // 最新6件のみ表示
+        setTrips(data.slice(0, 6))
       }
     } catch (error) {
       console.error('Failed to fetch trips:', error)
