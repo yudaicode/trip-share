@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 
@@ -115,7 +115,6 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createClient()
     const session = await getServerSession(authOptions)
 
     // ユーザー認証確認
@@ -125,6 +124,9 @@ export async function PUT(
 
     const { id } = await params
     const body = await request.json()
+
+    // 管理者権限でSupabaseにアクセス（RLSバイパス）
+    const supabase = createAdminClient()
 
     // 旅行プランの所有者確認
     const { data: existingTrip, error: tripError } = await supabase
@@ -194,7 +196,6 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createClient()
     const session = await getServerSession(authOptions)
 
     // ユーザー認証確認
@@ -203,6 +204,9 @@ export async function DELETE(
     }
 
     const { id } = await params
+
+    // 管理者権限でSupabaseにアクセス（RLSバイパス）
+    const supabase = createAdminClient()
 
     // 旅行プランの所有者確認
     const { data: existingTrip, error: tripError } = await supabase
