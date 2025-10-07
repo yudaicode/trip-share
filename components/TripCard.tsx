@@ -179,13 +179,16 @@ export default function TripCard({
                 {userName.charAt(0).toUpperCase()}
               </div>
               {userId ? (
-                <Link
-                  href={`/profile/${userId}`}
-                  onClick={(e) => e.stopPropagation()}
-                  className="text-sm font-medium text-gray-700 hover:text-blue-600 hover:underline"
+                <button
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    router.push(`/profile/${userId}`)
+                  }}
+                  className="text-sm font-medium text-gray-700 hover:text-blue-600 hover:underline text-left"
                 >
                   {userName}
-                </Link>
+                </button>
               ) : (
                 <span className="text-sm font-medium text-gray-700">{userName}</span>
               )}
