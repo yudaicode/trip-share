@@ -132,8 +132,8 @@ export default function Header() {
 
       {/* モバイルメニュー */}
       {showMobileMenu && (
-        <div className="md:hidden border-t border-gray-200 bg-white/95 backdrop-blur-lg">
-          <div className="container mx-auto px-4 py-4 space-y-2">
+        <div className="md:hidden border-t border-gray-200 bg-white/95 backdrop-blur-lg shadow-lg">
+          <div className="container mx-auto px-4 py-4 space-y-1">
             <Link
               href="/explore"
               className="block py-2 text-gray-700 hover:text-blue-600 transition-colors font-medium"
