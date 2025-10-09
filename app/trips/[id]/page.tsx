@@ -15,6 +15,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
+import toast from "react-hot-toast"
 
 interface TripDetail {
   id: string
@@ -104,7 +105,7 @@ export default function TripDetailPage() {
       }
     } catch (error) {
       console.error('取得エラー:', error)
-      alert('旅行プランが見つかりませんでした')
+      toast.error('旅行プランが見つかりませんでした')
       router.push('/')
     } finally {
       setIsLoading(false)
@@ -170,15 +171,15 @@ export default function TripDetailPage() {
       })
 
       if (response.ok) {
-        alert('旅行プランを削除しました')
+        toast.success('旅行プランを削除しました')
         router.push('/dashboard')
       } else {
         const error = await response.json()
-        alert(`削除に失敗しました: ${error.error}`)
+        toast.error(`削除に失敗しました: ${error.error}`)
       }
     } catch (error) {
       console.error('削除エラー:', error)
-      alert('削除に失敗しました')
+      toast.error('削除に失敗しました')
     } finally {
       setIsDeleting(false)
     }
@@ -239,11 +240,11 @@ export default function TripDetailPage() {
       }
 
       const createdTrip = await response.json()
-      alert('プランをコピーしました！編集ページに移動します。')
+      toast.success('プランをコピーしました！編集ページに移動します。')
       router.push(`/trips/${createdTrip.id}/edit`)
     } catch (error) {
       console.error('コピーエラー:', error)
-      alert('プランのコピーに失敗しました')
+      toast.error('プランのコピーに失敗しました')
     } finally {
       setIsCopying(false)
     }

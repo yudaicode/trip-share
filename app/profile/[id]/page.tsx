@@ -10,6 +10,9 @@ import { Card, CardContent } from "@/components/ui/card"
 import { motion } from "framer-motion"
 import { User, MapPin, Calendar, Edit, ArrowLeft, UserPlus, UserMinus } from "lucide-react"
 import Link from "next/link"
+import toast from "react-hot-toast"
+import { PageLoading } from "@/components/ui/page-loading"
+import { EmptyState } from "@/components/ui/empty-state"
 
 interface Profile {
   id: string
@@ -109,13 +112,14 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
       if (response.ok) {
         setIsFollowing(!isFollowing)
         setFollowerCount(prev => isFollowing ? Math.max(0, prev - 1) : prev + 1)
+        toast.success(isFollowing ? 'フォローを解除しました' : 'フォローしました')
       } else {
         const error = await response.json()
-        alert(error.error || 'フォロー操作に失敗しました')
+        toast.error(error.error || 'フォロー操作に失敗しました')
       }
     } catch (error) {
       console.error("フォロー操作エラー:", error)
-      alert('フォロー操作に失敗しました')
+      toast.error('フォロー操作に失敗しました')
     } finally {
       setIsFollowLoading(false)
     }
@@ -133,9 +137,7 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-pink-50">
         <Header />
         <div className="container mx-auto px-4 py-16">
-          <div className="flex justify-center items-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          </div>
+          <PageLoading message="プロフィールを読み込んでいます..." />
         </div>
       </div>
     )
@@ -296,20 +298,18 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
           {/* 旅行プラン一覧 */}
           {trips.length === 0 ? (
             <Card>
-              <CardContent className="py-20 text-center">
-                <MapPin className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                <p className="text-gray-600 mb-4">
-                  {isOwnProfile
+              <CardContent className="py-6">
+                <EmptyState
+                  icon={MapPin}
+                  title={isOwnProfile
                     ? "まだ旅行プランを作成していません"
                     : "まだ公開されている旅行プランがありません"}
-                </p>
-                {isOwnProfile && (
-                  <Link href="/trips/new">
-                    <Button>
-                      旅行プランを作成
-                    </Button>
-                  </Link>
-                )}
+                  description={isOwnProfile ? "最初の旅行プランを作成してみましょう！" : undefined}
+                  action={isOwnProfile ? {
+                    label: "旅行プランを作成",
+                    onClick: () => router.push("/create")
+                  } : undefined}
+                />
               </CardContent>
             </Card>
           ) : (

@@ -157,7 +157,7 @@ export default function ImageUpload({
           }
           reader.readAsDataURL(file)
         } else {
-          alert('画像ファイルのみアップロード可能です')
+          setError('画像ファイルのみアップロード可能です')
         }
       })
     }

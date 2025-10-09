@@ -12,6 +12,7 @@ import { motion } from "framer-motion"
 import { ArrowLeft, Save, Calendar, MapPin, ChevronDown, ChevronUp } from "lucide-react"
 import Link from "next/link"
 import { Activity } from "@/components/ActivityItem"
+import toast from "react-hot-toast"
 
 interface TripDetail {
   id: string
@@ -94,7 +95,7 @@ export default function EditTripPage() {
 
       // 権限チェック
       if (data.user.id !== session?.user?.id) {
-        alert('編集権限がありません')
+        toast.error('編集権限がありません')
         router.push(`/trips/${params.id}`)
         return
       }
@@ -130,7 +131,7 @@ export default function EditTripPage() {
 
     } catch (error) {
       console.error("取得エラー:", error)
-      alert("旅行プランの取得に失敗しました")
+      toast.error("旅行プランの取得に失敗しました")
       router.push('/dashboard')
     } finally {
       setIsLoading(false)
@@ -248,11 +249,11 @@ export default function EditTripPage() {
         throw new Error(error.error || '更新に失敗しました')
       }
 
-      alert('旅行プランを更新しました')
+      toast.success('旅行プランを更新しました')
       router.push(`/trips/${params.id}`)
     } catch (error) {
       console.error("更新エラー:", error)
-      alert("旅行プランの更新に失敗しました。もう一度お試しください。")
+      toast.error("旅行プランの更新に失敗しました。もう一度お試しください。")
     } finally {
       setIsSaving(false)
     }

@@ -13,6 +13,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { motion } from "framer-motion"
 import { ArrowLeft, Save, User, Loader2 } from "lucide-react"
 import Link from "next/link"
+import toast from "react-hot-toast"
+import { PageLoading } from "@/components/ui/page-loading"
 
 interface Profile {
   id: string
@@ -87,15 +89,15 @@ export default function EditProfilePage() {
       })
 
       if (response.ok) {
-        alert('プロフィールを更新しました')
+        toast.success('プロフィールを更新しました')
         router.push('/dashboard')
       } else {
         const error = await response.json()
-        alert(error.error || 'プロフィールの更新に失敗しました')
+        toast.error(error.error || 'プロフィールの更新に失敗しました')
       }
     } catch (error) {
       console.error("プロフィール更新エラー:", error)
-      alert('プロフィールの更新に失敗しました')
+      toast.error('プロフィールの更新に失敗しました')
     } finally {
       setIsSaving(false)
     }
@@ -106,9 +108,7 @@ export default function EditProfilePage() {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-pink-50">
         <Header />
         <div className="container mx-auto px-4 py-16">
-          <div className="flex justify-center items-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          </div>
+          <PageLoading message="プロフィール情報を読み込んでいます..." />
         </div>
       </div>
     )

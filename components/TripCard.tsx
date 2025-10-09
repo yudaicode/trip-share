@@ -8,6 +8,7 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Calendar, Heart, MapPin, MessageCircle, Users, Share2 } from "lucide-react"
 import { motion } from "framer-motion"
 import { useSession } from "next-auth/react"
+import toast from "react-hot-toast"
 
 interface TripCardProps {
   id: string
@@ -121,9 +122,10 @@ export default function TripCard({
     } else {
       try {
         await navigator.clipboard.writeText(url)
-        alert('URLをクリップボードにコピーしました！')
+        toast.success('URLをクリップボードにコピーしました！')
       } catch (err) {
         console.error('コピーに失敗しました:', err)
+        toast.error('コピーに失敗しました')
       }
     }
   }

@@ -8,6 +8,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { MessageCircle, Send, User, Trash2 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import Link from "next/link"
+import toast from "react-hot-toast"
+import { LoadingSpinner } from "@/components/ui/loading-spinner"
+import { EmptyState } from "@/components/ui/empty-state"
 
 interface Comment {
   id: string
@@ -77,12 +80,13 @@ export default function CommentSection({ tripId, initialCommentsCount = 0 }: Com
         const comment = await response.json()
         setComments([comment, ...comments])
         setNewComment("")
+        toast.success("コメントを投稿しました")
       } else {
-        alert("コメントの投稿に失敗しました")
+        toast.error("コメントの投稿に失敗しました")
       }
     } catch (error) {
       console.error("コメント投稿エラー:", error)
-      alert("コメントの投稿に失敗しました")
+      toast.error("コメントの投稿に失敗しました")
     } finally {
       setIsSubmitting(false)
     }
@@ -102,12 +106,13 @@ export default function CommentSection({ tripId, initialCommentsCount = 0 }: Com
 
       if (response.ok) {
         setComments(comments.filter((c) => c.id !== commentId))
+        toast.success("コメントを削除しました")
       } else {
-        alert("コメントの削除に失敗しました")
+        toast.error("コメントの削除に失敗しました")
       }
     } catch (error) {
       console.error("コメント削除エラー:", error)
-      alert("コメントの削除に失敗しました")
+      toast.error("コメントの削除に失敗しました")
     } finally {
       setDeletingId(null)
     }
@@ -194,14 +199,14 @@ export default function CommentSection({ tripId, initialCommentsCount = 0 }: Com
         <div className="space-y-4">
           {isLoading ? (
             <div className="flex justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <LoadingSpinner size="md" />
             </div>
           ) : comments.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <MessageCircle className="h-12 w-12 mx-auto mb-2 text-gray-300" />
-              <p>まだコメントがありません</p>
-              <p className="text-sm">最初のコメントを投稿してみましょう！</p>
-            </div>
+            <EmptyState
+              icon={MessageCircle}
+              title="まだコメントがありません"
+              description="最初のコメントを投稿してみましょう！"
+            />
           ) : (
             <AnimatePresence>
               {comments.map((comment, index) => (
@@ -246,7 +251,7 @@ export default function CommentSection({ tripId, initialCommentsCount = 0 }: Com
                           className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
                         >
                           {deletingId === comment.id ? (
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
+                            <LoadingSpinner size="sm" className="border-b-red-600" />
                           ) : (
                             <Trash2 className="h-4 w-4" />
                           )}

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { motion } from "framer-motion"
 import { Mail, ArrowLeft, UserPlus } from "lucide-react"
+import toast from "react-hot-toast"
 
 export default function SignUpPage() {
   const router = useRouter()
@@ -65,7 +66,7 @@ export default function SignUpPage() {
   const handleGoogleSignUp = () => {
     setIsLoading(true)
     // signIn("google", { callbackUrl: "/dashboard" })
-    alert("Googleサインアップは近日公開予定です")
+    toast("Googleサインアップは近日公開予定です", { icon: "ℹ️" })
     setIsLoading(false)
   }
 

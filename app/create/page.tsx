@@ -12,6 +12,7 @@ import { motion } from "framer-motion"
 import { ArrowLeft, Calendar, MapPin, Image as ImageIcon, Save, ChevronDown, ChevronUp } from "lucide-react"
 import Link from "next/link"
 import { Activity } from "@/components/ActivityItem"
+import toast from "react-hot-toast"
 
 interface TripFormData {
   title: string
@@ -168,7 +169,7 @@ export default function CreateTripPage() {
       router.push(`/trips/${createdTrip.id}`)
     } catch (error) {
       console.error("作成エラー:", error)
-      alert("旅行プランの作成に失敗しました。もう一度お試しください。")
+      toast.error("旅行プランの作成に失敗しました。もう一度お試しください。")
     } finally {
       setIsLoading(false)
     }

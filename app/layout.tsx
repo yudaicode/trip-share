@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
+import { createMetadata } from "@/lib/metadata";
+import Footer from "@/components/Footer";
 
-export const metadata: Metadata = {
-  title: "タビネタ - 旅のネタをみんなでシェア",
-  description: "旅行プランを作成・共有して、旅のネタを交換できるプラットフォーム",
-};
+export const metadata: Metadata = createMetadata({
+  title: undefined, // Will use default site name
+});
 
 export default function RootLayout({
   children,
@@ -14,9 +15,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja">
-      <body className="bg-gradient-to-br from-blue-50 via-white to-pink-50 min-h-screen">
+      <body className="bg-gradient-to-br from-blue-50 via-white to-pink-50 min-h-screen flex flex-col">
         <Providers>
-          {children}
+          <div className="flex-1">
+            {children}
+          </div>
+          <Footer />
         </Providers>
       </body>
     </html>
