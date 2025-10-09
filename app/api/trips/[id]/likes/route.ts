@@ -73,6 +73,27 @@ export async function POST(
         )
       }
 
+      // 旅行プランの所有者を取得して通知を作成
+      const { data: trip } = await supabase
+        .from('trip_schedules')
+        .select('user_id, title')
+        .eq('id', id)
+        .single()
+
+      if (trip && trip.user_id !== session.user.id) {
+        // 自分自身へのいいねには通知を作成しない
+        await supabase
+          .from('notifications')
+          .insert({
+            user_id: trip.user_id,
+            type: 'like',
+            content: 'があなたの旅行プランにいいねしました',
+            trip_schedule_id: id,
+            from_user_id: session.user.id,
+            is_read: false
+          })
+      }
+
       // Get updated likes count
       const { count: likesCount } = await supabase
         .from('trip_likes')

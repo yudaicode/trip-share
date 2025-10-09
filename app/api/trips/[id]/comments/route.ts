@@ -111,6 +111,27 @@ export async function POST(
       )
     }
 
+    // 旅行プランの所有者を取得して通知を作成
+    const { data: trip } = await supabase
+      .from('trip_schedules')
+      .select('user_id, title')
+      .eq('id', id)
+      .single()
+
+    if (trip && trip.user_id !== session.user.id) {
+      // 自分自身へのコメントには通知を作成しない
+      await supabase
+        .from('notifications')
+        .insert({
+          user_id: trip.user_id,
+          type: 'comment',
+          content: 'があなたの旅行プランにコメントしました',
+          trip_schedule_id: id,
+          from_user_id: session.user.id,
+          is_read: false
+        })
+    }
+
     // Get user details from profiles table
     const { data: user } = await supabase
       .from('profiles')
