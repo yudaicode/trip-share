@@ -8,7 +8,7 @@ import TripCard from "@/components/TripCard"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { motion } from "framer-motion"
-import { User, MapPin, Calendar, Edit, ArrowLeft } from "lucide-react"
+import { User, MapPin, Calendar, Edit, ArrowLeft, UserPlus, UserMinus } from "lucide-react"
 import Link from "next/link"
 
 interface Profile {
@@ -44,12 +44,19 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
   const [trips, setTrips] = useState<Trip[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<"trips" | "bookmarks">("trips")
+  const [isFollowing, setIsFollowing] = useState(false)
+  const [followerCount, setFollowerCount] = useState(0)
+  const [followingCount, setFollowingCount] = useState(0)
+  const [isFollowLoading, setIsFollowLoading] = useState(false)
 
   const isOwnProfile = session?.user?.id === params.id
 
   useEffect(() => {
     fetchProfileData()
-  }, [params.id])
+    if (session?.user) {
+      fetchFollowStatus()
+    }
+  }, [params.id, session])
 
   const fetchProfileData = async () => {
     try {
@@ -70,6 +77,47 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
       console.error("プロフィールデータの取得に失敗しました:", error)
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const fetchFollowStatus = async () => {
+    try {
+      const response = await fetch(`/api/users/${params.id}/follow`)
+      if (response.ok) {
+        const data = await response.json()
+        setIsFollowing(data.isFollowing)
+        setFollowerCount(data.followerCount)
+        setFollowingCount(data.followingCount)
+      }
+    } catch (error) {
+      console.error("フォロー状態の取得に失敗しました:", error)
+    }
+  }
+
+  const handleFollowToggle = async () => {
+    if (!session?.user) {
+      router.push('/auth/signin')
+      return
+    }
+
+    setIsFollowLoading(true)
+    try {
+      const response = await fetch(`/api/users/${params.id}/follow`, {
+        method: isFollowing ? 'DELETE' : 'POST'
+      })
+
+      if (response.ok) {
+        setIsFollowing(!isFollowing)
+        setFollowerCount(prev => isFollowing ? Math.max(0, prev - 1) : prev + 1)
+      } else {
+        const error = await response.json()
+        alert(error.error || 'フォロー操作に失敗しました')
+      }
+    } catch (error) {
+      console.error("フォロー操作エラー:", error)
+      alert('フォロー操作に失敗しました')
+    } finally {
+      setIsFollowLoading(false)
     }
   }
 
@@ -161,13 +209,29 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
                         <p className="text-gray-500">@{profile.username}</p>
                       )}
                     </div>
-                    {isOwnProfile && (
+                    {isOwnProfile ? (
                       <Link href="/profile/edit">
                         <Button className="mt-4 sm:mt-0">
                           <Edit className="h-4 w-4 mr-2" />
                           プロフィールを編集
                         </Button>
                       </Link>
+                    ) : (
+                      <Button
+                        onClick={handleFollowToggle}
+                        disabled={isFollowLoading}
+                        variant={isFollowing ? "outline" : "default"}
+                        className="mt-4 sm:mt-0"
+                      >
+                        {isFollowLoading ? (
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2" />
+                        ) : isFollowing ? (
+                          <UserMinus className="h-4 w-4 mr-2" />
+                        ) : (
+                          <UserPlus className="h-4 w-4 mr-2" />
+                        )}
+                        {isFollowing ? 'フォロー中' : 'フォローする'}
+                      </Button>
                     )}
                   </div>
 
@@ -184,6 +248,16 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
                       <MapPin className="h-4 w-4 text-blue-500" />
                       <span className="font-semibold">{trips.length}</span>
                       <span>旅行プラン</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4 text-green-500" />
+                      <span className="font-semibold">{followerCount}</span>
+                      <span>フォロワー</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4 text-purple-500" />
+                      <span className="font-semibold">{followingCount}</span>
+                      <span>フォロー中</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-pink-500" />

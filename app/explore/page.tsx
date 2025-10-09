@@ -153,35 +153,14 @@ function ExploreContent() {
       if (searchQuery) {
         params.append("q", searchQuery)
       }
-      if (sortBy) {
-        params.append("sort", sortBy)
-      }
-      if (selectedDuration !== "all") {
-        if (selectedDuration === "1") {
-          params.append("maxDuration", "1")
-        } else if (selectedDuration === "2-3") {
-          params.append("minDuration", "2")
-          params.append("maxDuration", "3")
-        } else if (selectedDuration === "4-7") {
-          params.append("minDuration", "4")
-          params.append("maxDuration", "7")
-        } else if (selectedDuration === "8+") {
-          params.append("minDuration", "8")
-        }
-      }
-      if (selectedDateRange !== "all") {
-        params.append("dateRange", selectedDateRange)
-      }
-      if (selectedTravelerCount !== "all") {
-        if (selectedTravelerCount === "5") {
-          // 5人以上の場合は特別な処理が必要かもしれませんが、今回は5人として扱います
-          params.append("travelerCount", "5")
-        } else {
-          params.append("travelerCount", selectedTravelerCount)
-        }
+      // ソートパラメータを調整
+      if (sortBy === "latest" || sortBy === "newest") {
+        params.append("sort", "newest")
+      } else if (sortBy === "popular" || sortBy === "likes") {
+        params.append("sort", "popular")
       }
 
-      const response = await fetch(`/api/trips?${params.toString()}`)
+      const response = await fetch(`/api/search?${params.toString()}`)
       if (response.ok) {
         const data = await response.json()
         setTrips(data)
