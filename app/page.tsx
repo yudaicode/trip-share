@@ -128,6 +128,7 @@ export default function Home() {
     end_date: string
     traveler_count: number
     cover_image: string | null
+    user_id?: string
     user?: { name: string }
     _count?: { likes: number; comments: number }
   }>>([])

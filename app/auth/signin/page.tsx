@@ -16,6 +16,8 @@ function SignInContent() {
   const [isLoading, setIsLoading] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [twoFactorToken, setTwoFactorToken] = useState("")
+  const [requires2FA, setRequires2FA] = useState(false)
   const [error, setError] = useState("")
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
@@ -27,11 +29,18 @@ function SignInContent() {
       const result = await signIn("credentials", {
         email,
         password,
+        twoFactorToken: requires2FA ? twoFactorToken : undefined,
         redirect: false,
       })
 
       if (result?.error) {
-        setError(result.error)
+        // 2FAが必要な場合
+        if (result.error === "2FA_REQUIRED") {
+          setRequires2FA(true)
+          setError("")
+        } else {
+          setError(result.error)
+        }
       } else if (result?.ok) {
         window.location.href = callbackUrl
       }
@@ -91,6 +100,7 @@ function SignInContent() {
                     placeholder="your-email@example.com"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
+                    disabled={requires2FA}
                   />
                 </div>
                 <div>
@@ -105,8 +115,36 @@ function SignInContent() {
                     placeholder="8文字以上"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
+                    disabled={requires2FA}
                   />
                 </div>
+
+                {requires2FA && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-md p-4 space-y-3">
+                    <p className="text-sm text-blue-800 font-medium">
+                      2段階認証が有効になっています
+                    </p>
+                    <div>
+                      <label htmlFor="twoFactorToken" className="block text-sm font-medium text-gray-700 mb-1">
+                        認証コード
+                      </label>
+                      <input
+                        type="text"
+                        id="twoFactorToken"
+                        value={twoFactorToken}
+                        onChange={(e) => setTwoFactorToken(e.target.value.replace(/\D/g, ""))}
+                        placeholder="000000"
+                        maxLength={6}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center text-xl tracking-widest"
+                        required
+                        autoFocus
+                      />
+                      <p className="text-xs text-gray-600 mt-1">
+                        認証アプリに表示されている6桁のコードを入力してください
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 {error && (
                   <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">
@@ -117,11 +155,26 @@ function SignInContent() {
                 <Button
                   type="submit"
                   className="w-full"
-                  disabled={isLoading}
+                  disabled={isLoading || (requires2FA && twoFactorToken.length !== 6)}
                 >
                   <Mail className="h-4 w-4 mr-2" />
                   {isLoading ? "ログイン中..." : "ログイン"}
                 </Button>
+
+                {requires2FA && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => {
+                      setRequires2FA(false)
+                      setTwoFactorToken("")
+                      setError("")
+                    }}
+                  >
+                    キャンセル
+                  </Button>
+                )}
               </form>
 
               <div className="relative">

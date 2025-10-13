@@ -14,7 +14,8 @@ export const authOptions: NextAuthOptions = {
       name: "credentials",
       credentials: {
         email: { label: "メールアドレス", type: "email" },
-        password: { label: "パスワード", type: "password" }
+        password: { label: "パスワード", type: "password" },
+        twoFactorToken: { label: "2FAコード", type: "text" }
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
@@ -23,10 +24,10 @@ export const authOptions: NextAuthOptions = {
 
         const supabase = await createClient()
 
-        // プロフィールからユーザーを検索（emailとpassword_hashを取得）
+        // プロフィールからユーザーを検索（2FA情報も含めて取得）
         const { data: profile, error } = await supabase
           .from('profiles')
-          .select('id, email, password_hash, full_name, avatar_url, username')
+          .select('id, email, password_hash, full_name, avatar_url, username, two_factor_enabled')
           .eq('email', credentials.email)
           .single()
 
@@ -46,6 +47,34 @@ export const authOptions: NextAuthOptions = {
 
         if (!isPasswordValid) {
           throw new Error("メールアドレスまたはパスワードが正しくありません")
+        }
+
+        // 2FAが有効な場合
+        if (profile.two_factor_enabled) {
+          // 2FAトークンが提供されていない場合
+          if (!credentials.twoFactorToken) {
+            throw new Error("2FA_REQUIRED")
+          }
+
+          // 2FAトークンを検証
+          try {
+            const verifyResponse = await fetch(`${process.env.NEXTAUTH_URL}/api/auth/2fa/verify`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                email: credentials.email,
+                token: credentials.twoFactorToken
+              })
+            })
+
+            const verifyResult = await verifyResponse.json()
+
+            if (!verifyResponse.ok || !verifyResult.valid) {
+              throw new Error("検証コードが正しくありません")
+            }
+          } catch (error) {
+            throw new Error("検証コードが正しくありません")
+          }
         }
 
         return {

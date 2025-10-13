@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import React, { useEffect, useState } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import Header from "@/components/Header"
@@ -40,7 +40,12 @@ interface Trip {
   }
 }
 
-export default function UserProfilePage({ params }: { params: { id: string } }) {
+interface PageProps {
+  params: Promise<{ id: string }>
+}
+
+export default function UserProfilePage({ params }: PageProps) {
+  const resolvedParams = React.use(params)
   const { data: session } = useSession()
   const router = useRouter()
   const [profile, setProfile] = useState<Profile | null>(null)
@@ -52,26 +57,26 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
   const [followingCount, setFollowingCount] = useState(0)
   const [isFollowLoading, setIsFollowLoading] = useState(false)
 
-  const isOwnProfile = session?.user?.id === params.id
+  const isOwnProfile = session?.user?.id === resolvedParams.id
 
   useEffect(() => {
     fetchProfileData()
     if (session?.user) {
       fetchFollowStatus()
     }
-  }, [params.id, session])
+  }, [resolvedParams.id, session])
 
   const fetchProfileData = async () => {
     try {
       // プロフィール情報を取得
-      const profileResponse = await fetch(`/api/users/${params.id}`)
+      const profileResponse = await fetch(`/api/users/${resolvedParams.id}`)
       if (profileResponse.ok) {
         const profileData = await profileResponse.json()
         setProfile(profileData)
       }
 
       // ユーザーの旅行プランを取得
-      const tripsResponse = await fetch(`/api/users/${params.id}/trips`)
+      const tripsResponse = await fetch(`/api/users/${resolvedParams.id}/trips`)
       if (tripsResponse.ok) {
         const tripsData = await tripsResponse.json()
         setTrips(tripsData)
@@ -85,7 +90,7 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
 
   const fetchFollowStatus = async () => {
     try {
-      const response = await fetch(`/api/users/${params.id}/follow`)
+      const response = await fetch(`/api/users/${resolvedParams.id}/follow`)
       if (response.ok) {
         const data = await response.json()
         setIsFollowing(data.isFollowing)
@@ -105,7 +110,7 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
 
     setIsFollowLoading(true)
     try {
-      const response = await fetch(`/api/users/${params.id}/follow`, {
+      const response = await fetch(`/api/users/${resolvedParams.id}/follow`, {
         method: isFollowing ? 'DELETE' : 'POST'
       })
 
