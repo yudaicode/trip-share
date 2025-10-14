@@ -6,6 +6,7 @@ import Link from "next/link"
 import Header from "@/components/Header"
 import TripCard from "@/components/TripCard"
 import { Button } from "@/components/ui/button"
+import { AdBanner } from "@/components/AdBanner"
 import { motion } from "framer-motion"
 import { ArrowRight, Sparkles, Users, Share2, Globe } from "lucide-react"
 
@@ -232,6 +233,11 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* 広告バナー */}
+      <div className="container mx-auto px-4">
+        <AdBanner format="horizontal" />
+      </div>
 
       <section className="py-16 px-4 bg-gray-50/50">
         <div className="container mx-auto">

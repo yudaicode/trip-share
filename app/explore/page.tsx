@@ -6,6 +6,7 @@ import Header from "@/components/Header"
 import TripCard from "@/components/TripCard"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { AdBanner } from "@/components/AdBanner"
 import { motion } from "framer-motion"
 import {
   Search, Filter, Calendar, MapPin, TrendingUp,
@@ -474,6 +475,9 @@ function ExploreContent() {
               </Card>
             </motion.div>
           )}
+
+          {/* 広告バナー */}
+          <AdBanner format="responsive" className="mb-6" />
 
           {/* 結果ヘッダー */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-2">
