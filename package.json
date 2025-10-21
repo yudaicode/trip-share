@@ -3,14 +3,14 @@
   "version": "1.0.0",
   "private": true,
   "workspaces": [
-    "apps/*",
+    "apps/web",
     "packages/*"
   ],
   "scripts": {
     "web": "npm run dev --workspace=@tabineta/web",
     "web:build": "npm run build --workspace=@tabineta/web",
     "web:start": "npm run start --workspace=@tabineta/web",
-    "mobile": "npm run start --workspace=@tabineta/mobile",
+    "mobile": "cd apps/mobile && npm start",
     "lint": "npm run lint --workspaces --if-present",
     "clean": "rm -rf node_modules apps/*/node_modules packages/*/node_modules apps/*/.next"
   },
